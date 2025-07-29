@@ -1,6 +1,6 @@
 # zig-tracy
 
-Library for instrumentating zig code for [Tracy 0.11.1](https://github.com/wolfpld/tracy).
+Library for instrumentating zig code for [Tracy 0.12.2](https://github.com/wolfpld/tracy).
 
 ## how to use
 
