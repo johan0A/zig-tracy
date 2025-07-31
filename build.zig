@@ -11,7 +11,8 @@ pub fn build(b: *std.Build) !void {
     });
 
     const options = .{
-        .enable_tracing = b.option(bool, "enable_tracing", "enable tracy profile markers") orelse false,
+        .src_directory_path = b.option([]const u8, "src_directory_path", "path to the root source file's directory (default: \"src\")") orelse "src",
+        .enable_tracy = b.option(bool, "enable_tracy", "enable tracy profile markers") orelse false,
         .enable_fibers = b.option(bool, "enable_fibers", "enable tracy fiber support") orelse false,
         .on_demand = b.option(bool, "on_demand", "builds tracy with TRACY_ON_DEMAND") orelse false,
         .callstack_support = b.option(bool, "callstack_support", "builds tracy with TRACY_USE_CALLSTACK") orelse false,
@@ -59,7 +60,7 @@ pub fn build(b: *std.Build) !void {
             .flags = &.{"-fno-sanitize=undefined"},
         });
 
-        if (options.enable_tracing) tracy.root_module.addCMacro("TRACY_ENABLE", "");
+        if (options.enable_tracy) tracy.root_module.addCMacro("TRACY_ENABLE", "");
         if (options.enable_fibers) tracy.root_module.addCMacro("TRACY_FIBERS", "");
         if (options.on_demand) tracy.root_module.addCMacro("TRACY_ON_DEMAND", "");
 

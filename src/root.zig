@@ -1,23 +1,28 @@
 pub const Zone = struct {
-    zone_context: if (options.enable_tracing) c.___tracy_c_zone_context else void,
+    zone_context: if (options.enable_tracy) c.___tracy_c_zone_context else void,
 
     pub inline fn text(self: Zone, zone_text: []const u8) void {
-        if (!options.enable_tracing) return;
+        if (!options.enable_tracy) return;
         c.___tracy_emit_zone_text(self.zone_context, zone_text.ptr, zone_text.len);
     }
 
     pub inline fn name(self: Zone, zone_name: []const u8) void {
-        if (!options.enable_tracing) return;
+        if (!options.enable_tracy) return;
         c.___tracy_emit_zone_name(self.zone_context, zone_name.ptr, zone_name.len);
     }
 
     pub inline fn value(self: Zone, zone_val: u64) void {
-        if (!options.enable_tracing) return;
+        if (!options.enable_tracy) return;
         c.___tracy_emit_zone_value(self.zone_context, zone_val);
     }
 
+    pub inline fn color(self: Zone, zone_color: Color) void {
+        if (!options.enable_tracy) return;
+        c.___tracy_emit_zone_color(self.zone_context, @bitCast(zone_color));
+    }
+
     pub inline fn end(self: Zone) void {
-        if (!options.enable_tracing) return;
+        if (!options.enable_tracy) return;
         c.___tracy_emit_zone_end(self.zone_context);
     }
 };
@@ -28,15 +33,15 @@ const ZoneConfig = struct {
     callstack_depth: ?c_int = 0,
 };
 
-pub inline fn zoneEx(comptime src: SourceLocation, config: ZoneConfig) Zone {
-    if (!options.enable_tracing) return .{ .zone_context = {} };
+pub fn zoneEx(comptime src: SourceLocation, comptime config: ZoneConfig) Zone {
+    if (!options.enable_tracy) return .{ .zone_context = {} };
     const depth = config.callstack_depth orelse options.default_callstack_depth;
 
     const global = struct {
         const loc: c.___tracy_source_location_data = .{
             .name = config.name,
             .function = src.fn_name.ptr,
-            .file = src.file.ptr,
+            .file = (options.src_directory_path ++ "/" ++ src.file).ptr,
             .line = src.line,
             .color = @bitCast(config.color),
         };
@@ -55,7 +60,7 @@ pub inline fn zone(comptime src: SourceLocation) Zone {
 }
 
 pub inline fn SetThreadName(name: [*:0]const u8) void {
-    if (!options.enable_tracing) return;
+    if (!options.enable_tracy) return;
     c.___tracy_set_thread_name(name);
 }
 
@@ -66,8 +71,8 @@ const AllocConfig = struct {
 };
 
 // pointer argument should be of type slice or single item pointer
-pub inline fn markAlloc(pointer: anytype, config: AllocConfig) void {
-    if (!options.enable_tracing) return;
+pub fn markAlloc(pointer: anytype, config: AllocConfig) void {
+    if (!options.enable_tracy) return;
     const depth = config.callstack_depth orelse options.default_callstack_depth;
 
     const info = @typeInfo(@TypeOf(pointer));
@@ -101,8 +106,8 @@ pub inline fn markAlloc(pointer: anytype, config: AllocConfig) void {
 }
 
 // pointer argument should be of type pointer
-pub inline fn markFree(pointer: anytype, config: AllocConfig) void {
-    if (!options.enable_tracing) return;
+pub fn markFree(pointer: anytype, config: AllocConfig) void {
+    if (!options.enable_tracy) return;
     const depth = config.callstack_depth orelse options.default_callstack_depth;
 
     const info = @typeInfo(@TypeOf(pointer));
@@ -133,30 +138,30 @@ const MessageConfig = struct {
     callstack_depth: ?c_int = null,
 };
 
-pub inline fn message(text: []const u8, message_config: MessageConfig) void {
-    if (!options.enable_tracing) return;
+pub fn message(text: []const u8, message_config: MessageConfig) void {
+    if (!options.enable_tracy) return;
     const depth = if (options.callstack_support)
         message_config.callstack_depth orelse options.default_callstack_depth
     else
         0;
 
     if (message_config.color) |color| {
-        c.___tracy_emit_messageC(text.ptr, text.len, color, depth);
+        c.___tracy_emit_messageC(text.ptr, text.len, @bitCast(color), depth);
     } else {
         c.___tracy_emit_message(text.ptr, text.len, depth);
     }
 }
 
 pub inline fn frameMark(name: ?[*:0]const u8) void {
-    if (!options.enable_tracing) return;
+    if (!options.enable_tracy) return;
     c.___tracy_emit_frame_mark(name);
 }
 pub inline fn frameMarkStart(name: ?[*:0]const u8) void {
-    if (!options.enable_tracing) return;
+    if (!options.enable_tracy) return;
     c.___tracy_emit_frame_mark_start(name);
 }
 pub inline fn frameMarkEnd(name: ?[*:0]const u8) void {
-    if (!options.enable_tracing) return;
+    if (!options.enable_tracy) return;
     c.___tracy_emit_frame_mark_end(name);
 }
 
@@ -171,28 +176,28 @@ pub inline fn frameMarkEnd(name: ?[*:0]const u8) void {
 /// pression technique, which significantly reduces data size, at a slight quality decrease. The compression
 /// algorithm is high-speed and can be made even faster by enabling SIMD processing
 pub inline fn setFrameImage(image: [*]Color, width: u16, height: u16, offset: u8, flip: bool) void {
-    if (!options.enable_tracing) return;
+    if (!options.enable_tracy) return;
     c.___tracy_emit_frame_image(image, width, height, offset, @intFromBool(flip));
 }
 
 pub inline fn fiberEnter(name: [*:0]const u8) void {
-    if (!options.enable_tracing) return;
+    if (!options.enable_tracy) return;
     if (!options.enable_fibers) return;
     c.___tracy_fiber_enter(name);
 }
 pub inline fn fiberLeave() void {
-    if (!options.enable_tracing) return;
+    if (!options.enable_tracy) return;
     if (!options.enable_fibers) return;
     c.___tracy_fiber_leave();
 }
 
 pub inline fn plot(name: [*:0]const u8, val: f64) void {
-    if (!options.enable_tracing) return;
+    if (!options.enable_tracy) return;
     c.___tracy_emit_plot(name, val);
 }
 
 pub inline fn appInfo(text: []const u8) void {
-    if (!options.enable_tracing) return;
+    if (!options.enable_tracy) return;
     c.___tracy_emit_message_appinfo(text.ptr, text.len);
 }
 
@@ -208,7 +213,7 @@ pub const TracyAllocator = struct {
     }
 
     pub fn allocator(self: *TracyAllocator) std.mem.Allocator {
-        if (!options.enable_tracing) return self.child_allocator;
+        if (!options.enable_tracy) return self.child_allocator;
         return .{
             .ptr = self,
             .vtable = &std.mem.Allocator.VTable{
@@ -276,7 +281,7 @@ pub const Color = packed struct(u32) {
 };
 
 const options = @import("options");
-const c = @import("c");
+pub const c = @import("c");
 
 const std = @import("std");
 const SourceLocation = std.builtin.SourceLocation;
