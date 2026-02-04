@@ -1,10 +1,10 @@
 # zig-tracy
 
-Library for instrumenting zig code for [Tracy 0.12.2](https://github.com/wolfpld/tracy).
+Library for instrumenting zig code for [Tracy 0.13.1](https://github.com/wolfpld/tracy).
 
 ## how to use
 
-1. Add `tracy` to the dependency list in `build.zig.zon`: 
+1. Add `tracy` to the dependency list in `build.zig.zon`:
 
 ```sh
 zig fetch --save git+https://github.com/johan0A/zig-tracy
@@ -34,4 +34,4 @@ fn baz() void {
 }
 ```
 
-see more in depth example in the example folder.
+see more in depth example in the example directory.

@@ -54,8 +54,8 @@ pub fn build(b: *std.Build) !void {
             }),
         });
 
-        tracy.addIncludePath(b.path("vendor/tracy/tracy"));
-        tracy.addCSourceFile(.{
+        tracy.root_module.addIncludePath(b.path("vendor/tracy/tracy"));
+        tracy.root_module.addCSourceFile(.{
             .file = b.path("vendor/tracy/TracyClient.cpp"),
             .flags = &.{"-fno-sanitize=undefined"},
         });
@@ -65,14 +65,14 @@ pub fn build(b: *std.Build) !void {
         if (options.on_demand) tracy.root_module.addCMacro("TRACY_ON_DEMAND", "");
 
         if (target.result.abi != .msvc) {
-            tracy.linkLibCpp();
+            tracy.root_module.link_libcpp = true;
         } else {
             tracy.root_module.addCMacro("fileno", "_fileno");
         }
 
         if (target.result.os.tag == .windows) {
-            tracy.linkSystemLibrary("ws2_32");
-            tracy.linkSystemLibrary("dbghelp");
+            tracy.root_module.linkSystemLibrary("ws2_32", .{});
+            tracy.root_module.linkSystemLibrary("dbghelp", .{});
         }
 
         root_module.linkLibrary(tracy);

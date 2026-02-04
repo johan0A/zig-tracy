@@ -1,29 +1,29 @@
 const std = @import("std");
 const tracy = @import("tracy");
 
-fn foo() void {
+fn foo(io: std.Io) void {
     const zone = tracy.zone(@src());
     defer zone.end();
-    std.Thread.sleep(std.time.ns_per_ms);
+    io.sleep(.fromMilliseconds(1), .awake) catch unreachable;
 }
 
-fn bar() void {
+fn bar(io: std.Io) void {
     const zone = tracy.zone(@src());
     defer zone.end();
-    foo();
+    foo(io);
     tracy.message("foo message!", .{});
-    foo();
-    foo();
+    foo(io);
+    foo(io);
 }
 
-fn baz() void {
+fn baz(io: std.Io) void {
     const zone = tracy.zone(@src());
     defer zone.end();
-    foo();
-    bar();
+    foo(io);
+    bar(io);
 }
 
-fn qux(alloc: std.mem.Allocator) !void {
+fn qux(io: std.Io, alloc: std.mem.Allocator) !void {
     var list: std.ArrayListUnmanaged(u8) = .empty;
     for (0..1e6) |_| {
         try list.appendSlice(alloc, "hello");
@@ -35,17 +35,15 @@ fn qux(alloc: std.mem.Allocator) !void {
 
     const zone = tracy.zone(@src());
     defer zone.end();
-    baz();
+    baz(io);
     const frame_name = "foo frame";
     tracy.frameMarkStart(frame_name);
     defer tracy.frameMarkEnd(frame_name);
-    foo();
+    foo(io);
 }
 
-pub fn main() !void {
-    var gpa: std.heap.DebugAllocator(.{}) = .init;
-    defer _ = gpa.deinit();
-    var tracy_allocator = tracy.TracyAllocator.init(gpa.allocator(), "foo allocator");
+pub fn main(init: std.process.Init) !void {
+    var tracy_allocator = tracy.TracyAllocator.init(init.gpa, "foo allocator");
     const alloc: std.mem.Allocator = tracy_allocator.allocator();
 
     tracy.appInfo("foo app info");
@@ -55,7 +53,7 @@ pub fn main() !void {
     var it: u64 = 0;
     while (true) : (it += 1) {
         tracy.plot("plot foo", std.math.sin(@as(f64, @floatFromInt(it)) / 2) + 1);
-        try qux(alloc);
+        try qux(init.io, alloc);
 
         tracy.setFrameImage(image.ptr, 100, 100, 0, false);
         for (0..100) |x| {
