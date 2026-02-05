@@ -280,7 +280,7 @@ pub const Color = packed struct(u32) {
     }
 };
 
-const options = @import("options");
+pub const options = @import("options");
 pub const c = @import("c");
 
 const std = @import("std");
