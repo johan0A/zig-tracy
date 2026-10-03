@@ -21,8 +21,9 @@ pub fn build(b: *std.Build) !void {
     };
 
     const options_step = b.addOptions();
-    inline for (std.meta.fields(@TypeOf(options))) |option| {
-        options_step.addOption(option.type, option.name, @field(options, option.name));
+    const info = @typeInfo(@TypeOf(options)).@"struct";
+    inline for (info.field_names, info.field_types) |name, @"type"| {
+        options_step.addOption(@"type", name, @field(options, name));
     }
     root_module.addImport("options", options_step.createModule());
 
